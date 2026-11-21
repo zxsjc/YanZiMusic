@@ -76,14 +76,12 @@ final class Updater {
     };
     /** 仓库里存放安装包的候选路径，从上到下第一个存在的生效。 */
     private static final String[] REPO_APK_PATHS = {
-            "release/YanZiMusic.apk",
             "release/app-debug.apk",
-            "YanZiMusic.apk"
+            "app-debug.apk"
     };
     private static final String[] DOWNLOAD_SOURCES = {
             "",
             "https://ghfast.top/",
-            "https://gh-proxy.com/",
             "https://ghproxy.net/"
     };
 
