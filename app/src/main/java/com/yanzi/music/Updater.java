@@ -60,6 +60,9 @@ final class Updater {
     /** 自动检查的最小间隔：同一进程里 6 小时内不重复请求（手动检查不受限制）。 */
     private static final long AUTO_INTERVAL_MS = 6L * 60 * 60 * 1000;
 
+    /** 本次检查里"探测成功"的那条下载地址；下载时排第一条，null 表示没有。 */
+    private static volatile String verifiedUrl = null;
+
     /**
      * 下载线路，顺序：
      * 1. jsDelivr CDN —— 前提是仓库里放了一份 APK（路径见 REPO_APK_PATHS）。jsDelivr 在国内有节点，
@@ -74,15 +77,21 @@ final class Updater {
             "https://gcore.jsdelivr.net",
             "https://cdn.jsdelivr.net"
     };
-    /** 仓库里存放安装包的候选路径，从上到下第一个存在的生效。 */
+    /**
+     * 仓库里存放安装包的候选路径，从上到下第一个"真的存在"的生效。
+     * release/app-debug.apk 放第一位：以后构建产物原名上传即可，两份并存时也优先取新名那份，
+     * 忘了删旧文件也不会拿到旧包；release/YanZiMusic.apk 保留作兜底（老仓库结构仍然可用）。
+     */
     private static final String[] REPO_APK_PATHS = {
             "release/app-debug.apk",
-            "app-debug.apk"
+            "release/YanZiMusic.apk",
+            "YanZiMusic.apk"
     };
     private static final String[] DOWNLOAD_SOURCES = {
-            "",
+            "https://ghproxy.net/",
             "https://ghfast.top/",
-            "https://ghproxy.net/"
+            ""
+
     };
 
     private static boolean checking = false;
@@ -286,21 +295,53 @@ final class Updater {
         prompt(act, rel, curName, newVer);
     }
 
-    /** 探测远端 APK 的 versionCode：只下几十 KB，失败返回 -1（按未知处理）。 */
+    /**
+     * 探测远端 APK 的 versionCode（只下几十 KB）。
+     *
+     * 探测同时兼任"线路体检"：命中的那条 URL 记进 {@link #verifiedUrl}，下载时直接排第一条。
+     * 这样就不再依赖"文件到底存不存在"的推断——GitHub 的 commits?path= 接口会顺着 rename
+     * 历史返回已删/已改名路径的 sha（拼出来是 404），只按它选线路会白试几条、探测失败后
+     * 退回按 tag 比较，进而误弹"发现新版本"。
+     */
     private static long probeRemoteCode(Release rel) {
+        verifiedUrl = null;
         try {
-            List<String> urls = buildLineList(rel);
+            List<String> urls = probeCandidateList(rel);
             int tried = 0;
-            for (int i = 0; i < urls.size() && tried < 4; i++) {
+            for (int i = 0; i < urls.size() && tried < 10; i++) {
                 tried++;
                 long v = ApkProbe.probe(urls.get(i));
                 if (v > 0) {
+                    verifiedUrl = urls.get(i);
                     return v;
                 }
             }
         } catch (Exception ignored) {
         }
         return -1;
+    }
+
+    /**
+     * 探测用的候选地址：仓库里可能的几个文件名 × jsDelivr 两个节点，再加 Release 资产。
+     * 每条都会真的发一次 Range 请求，404 的会被快速跳过，所以顺序不怕"猜错文件名"。
+     */
+    private static List<String> probeCandidateList(Release rel) {
+        List<String> urls = new ArrayList<String>();
+        for (int i = 0; i < REPO_APK_PATHS.length; i++) {
+            String path = REPO_APK_PATHS[i];
+            String sha = fetchCommitSha(path);
+            String ref = (sha != null && sha.length() > 0) ? sha : "main";
+            String tail = "/gh/" + OWNER + "/" + REPO + "@" + ref + "/" + encodePath(path);
+            urls.add(JSDELIVR_HOSTS[0] + tail);
+            urls.add(JSDELIVR_HOSTS[1] + tail);
+        }
+        if (rel.apkUrl.length() > 0) {
+            urls.add(rel.apkUrl);
+            for (int i = 1; i < DOWNLOAD_SOURCES.length; i++) {
+                urls.add(DOWNLOAD_SOURCES[i] + rel.apkUrl);
+            }
+        }
+        return urls;
     }
 
     private static void prompt(final Activity act, final Release rel, String curName, String newVer) {
@@ -438,11 +479,15 @@ final class Updater {
     }
 
     /**
-     * 拼出这次要依次尝试的下载地址：jsDelivr（仓库里那份 APK，走 commit SHA 拼地址）排在前面，
-     * GitHub release 资源 + 镜像垫在后面。仓库里没有放 APK 时，jsDelivr 部分自动为空。
+     * 拼出这次要依次尝试的下载地址。
+     * 第一条固定是 {@link #verifiedUrl}（本次检查里探测成功的那条，已验证能取到最新包），
+     * 后面再按 jsDelivr（commit SHA）→ 分支 → Release 资产 + 镜像的顺序兜底。
      */
     private static List<String> buildLineList(Release rel) {
         List<String> urls = new ArrayList<String>();
+        if (verifiedUrl != null) {
+            urls.add(verifiedUrl);
+        }
         boolean shaAdded = false;
         for (int i = 0; i < REPO_APK_PATHS.length; i++) {
             String path = REPO_APK_PATHS[i];

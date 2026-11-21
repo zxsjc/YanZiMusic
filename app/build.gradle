@@ -9,8 +9,8 @@ android {
         applicationId "com.yanzi.music"
         minSdkVersion 23
         targetSdkVersion 34
-        versionCode 44
-        versionName "1.7.37"
+        versionCode 46
+        versionName "2.0"
     }
 
     buildTypes {

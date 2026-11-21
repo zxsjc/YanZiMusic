@@ -1,127 +1,127 @@
 -- Merging decision tree log ---
 manifest
-ADDED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:2:1-57:12
-INJECTED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:2:1-57:12
-INJECTED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:2:1-57:12
-INJECTED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:2:1-57:12
+ADDED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:2:1-57:12
+INJECTED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:2:1-57:12
+INJECTED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:2:1-57:12
+INJECTED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:2:1-57:12
 	package
-		INJECTED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml
+		INJECTED from D:\YanZiMusic\app\src\main\AndroidManifest.xml
 	android:versionName
-		INJECTED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml
+		INJECTED from D:\YanZiMusic\app\src\main\AndroidManifest.xml
 	android:versionCode
-		INJECTED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml
+		INJECTED from D:\YanZiMusic\app\src\main\AndroidManifest.xml
 	xmlns:android
-		ADDED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:2:11-69
+		ADDED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:2:11-69
 uses-permission#android.permission.INTERNET
-ADDED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:4:5-67
+ADDED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:4:5-67
 	android:name
-		ADDED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:4:22-64
+		ADDED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:4:22-64
 uses-permission#android.permission.ACCESS_NETWORK_STATE
-ADDED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:5:5-79
+ADDED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:5:5-79
 	android:name
-		ADDED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:5:22-76
+		ADDED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:5:22-76
 uses-permission#android.permission.WAKE_LOCK
-ADDED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:6:5-68
+ADDED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:6:5-68
 	android:name
-		ADDED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:6:22-65
+		ADDED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:6:22-65
 uses-permission#android.permission.FOREGROUND_SERVICE
-ADDED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:7:5-77
+ADDED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:7:5-77
 	android:name
-		ADDED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:7:22-74
+		ADDED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:7:22-74
 uses-permission#android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK
-ADDED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:8:5-92
+ADDED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:8:5-92
 	android:name
-		ADDED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:8:22-89
+		ADDED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:8:22-89
 uses-permission#android.permission.POST_NOTIFICATIONS
-ADDED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:9:5-77
+ADDED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:9:5-77
 	android:name
-		ADDED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:9:22-74
+		ADDED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:9:22-74
 uses-permission#android.permission.REQUEST_INSTALL_PACKAGES
-ADDED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:12:5-83
+ADDED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:12:5-83
 	android:name
-		ADDED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:12:22-80
+		ADDED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:12:22-80
 uses-feature#android.software.leanback
-ADDED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:15:5-17:36
+ADDED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:15:5-17:36
 	android:required
-		ADDED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:17:9-33
+		ADDED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:17:9-33
 	android:name
-		ADDED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:16:9-49
+		ADDED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:16:9-49
 uses-feature#android.hardware.touchscreen
-ADDED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:18:5-20:36
+ADDED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:18:5-20:36
 	android:required
-		ADDED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:20:9-33
+		ADDED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:20:9-33
 	android:name
-		ADDED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:19:9-52
+		ADDED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:19:9-52
 application
-ADDED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:22:5-56:19
-INJECTED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:22:5-56:19
+ADDED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:22:5-56:19
+INJECTED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:22:5-56:19
 	android:extractNativeLibs
-		INJECTED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml
+		INJECTED from D:\YanZiMusic\app\src\main\AndroidManifest.xml
 	android:supportsRtl
-		ADDED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:27:9-35
+		ADDED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:27:9-35
 	android:label
-		ADDED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:23:9-41
+		ADDED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:23:9-41
 	android:hardwareAccelerated
-		ADDED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:28:9-43
+		ADDED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:28:9-43
 	android:icon
-		ADDED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:24:9-43
+		ADDED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:24:9-43
 	android:allowBackup
-		ADDED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:26:9-35
+		ADDED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:26:9-35
 	android:banner
-		ADDED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:25:9-45
+		ADDED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:25:9-45
 	android:theme
-		ADDED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:29:9-40
+		ADDED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:29:9-40
 activity#com.yanzi.music.MainActivity
-ADDED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:31:9-42:20
+ADDED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:31:9-42:20
 	android:launchMode
-		ADDED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:34:13-44
+		ADDED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:34:13-44
 	android:windowSoftInputMode
-		ADDED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:35:13-74
+		ADDED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:35:13-74
 	android:exported
-		ADDED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:33:13-36
+		ADDED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:33:13-36
 	android:configChanges
-		ADDED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:36:13-120
+		ADDED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:36:13-120
 	android:name
-		ADDED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:32:13-41
+		ADDED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:32:13-41
 intent-filter#action:name:android.intent.action.MAIN+category:name:android.intent.category.LAUNCHER+category:name:android.intent.category.LEANBACK_LAUNCHER
-ADDED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:37:13-41:29
+ADDED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:37:13-41:29
 action#android.intent.action.MAIN
-ADDED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:38:17-69
+ADDED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:38:17-69
 	android:name
-		ADDED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:38:25-66
+		ADDED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:38:25-66
 category#android.intent.category.LAUNCHER
-ADDED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:39:17-77
+ADDED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:39:17-77
 	android:name
-		ADDED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:39:27-74
+		ADDED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:39:27-74
 category#android.intent.category.LEANBACK_LAUNCHER
-ADDED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:40:17-86
+ADDED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:40:17-86
 	android:name
-		ADDED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:40:27-83
+		ADDED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:40:27-83
 service#com.yanzi.music.MusicService
-ADDED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:44:9-48:44
+ADDED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:44:9-48:44
 	android:exported
-		ADDED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:46:13-37
+		ADDED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:46:13-37
 	android:stopWithTask
-		ADDED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:48:13-41
+		ADDED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:48:13-41
 	android:foregroundServiceType
-		ADDED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:47:13-58
+		ADDED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:47:13-58
 	android:name
-		ADDED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:45:13-41
+		ADDED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:45:13-41
 provider#com.yanzi.music.ApkProvider
-ADDED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:51:9-55:50
+ADDED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:51:9-55:50
 	android:grantUriPermissions
-		ADDED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:55:13-47
+		ADDED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:55:13-47
 	android:authorities
-		ADDED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:53:13-58
+		ADDED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:53:13-58
 	android:exported
-		ADDED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:54:13-37
+		ADDED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:54:13-37
 	android:name
-		ADDED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml:52:13-40
+		ADDED from D:\YanZiMusic\app\src\main\AndroidManifest.xml:52:13-40
 uses-sdk
-INJECTED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml reason: use-sdk injection requested
-INJECTED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml
-INJECTED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml
+INJECTED from D:\YanZiMusic\app\src\main\AndroidManifest.xml reason: use-sdk injection requested
+INJECTED from D:\YanZiMusic\app\src\main\AndroidManifest.xml
+INJECTED from D:\YanZiMusic\app\src\main\AndroidManifest.xml
 	android:targetSdkVersion
-		INJECTED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml
+		INJECTED from D:\YanZiMusic\app\src\main\AndroidManifest.xml
 	android:minSdkVersion
-		INJECTED from E:\Documents\GitHub\YanZiMusic\app\src\main\AndroidManifest.xml
+		INJECTED from D:\YanZiMusic\app\src\main\AndroidManifest.xml
