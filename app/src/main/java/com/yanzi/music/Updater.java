@@ -23,8 +23,14 @@ import org.json.JSONObject;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.io.RandomAccessFile;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLEncoder;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -55,11 +61,25 @@ final class Updater {
     private static final long AUTO_INTERVAL_MS = 6L * 60 * 60 * 1000;
 
     /**
-     * 下载线路：第 1 条直连 GitHub，其余是国内常用的 GitHub 加速镜像（前缀 + 原始完整地址）。
-     * 实测：release-assets.githubusercontent.com 在国内被解析到 127.0.0.1，直连必然失败，
-     * 手机与电脑都一样；ghfast.top 实测可取回完整 APK，所以按顺序自动切换。
-     * 安全上不必担心镜像篡改：系统安装器会校验签名，签名不符的包根本装不上（升级装不上）。
+     * 下载线路，顺序：
+     * 1. jsDelivr CDN —— 前提是仓库里放了一份 APK（路径见 REPO_APK_PATHS）。jsDelivr 在国内有节点，
+     *    实测同一时间点 166~250 KB/s，比各种 GitHub 加速镜像快 2~3 倍，是目前最稳的一条。
+     *    用「无限期缓存的 commit SHA」拼地址，避免分支缓存（最长 12 小时）导致拿到旧包。
+     * 2. GitHub release 资源 + 加速镜像兜底（镜像时通时断，只作后备）。
+     * 安全上不必担心镜像篡改：系统安装器会校验签名，签名不符的包根本装不上。
      */
+    private static final String[] JSDELIVR_HOSTS = {
+            "https://testingcf.jsdelivr.net",
+            "https://fastly.jsdelivr.net",
+            "https://gcore.jsdelivr.net",
+            "https://cdn.jsdelivr.net"
+    };
+    /** 仓库里存放安装包的候选路径，从上到下第一个存在的生效。 */
+    private static final String[] REPO_APK_PATHS = {
+            "release/YanZiMusic.apk",
+            "release/app-debug.apk",
+            "YanZiMusic.apk"
+    };
     private static final String[] DOWNLOAD_SOURCES = {
             "",
             "https://ghfast.top/",
@@ -113,6 +133,8 @@ final class Updater {
                 } catch (Exception e) {
                     err = describe(e);
                 }
+                // 先看远端那个 APK 真实的 versionCode：只下几十 KB，包不比本机新就根本不弹窗
+                final long remoteCode = (rel == null) ? -1 : probeRemoteCode(rel);
                 final Release fRel = rel;
                 final String fErr = err;
                 act.runOnUiThread(new Runnable() {
@@ -130,7 +152,7 @@ final class Updater {
                             }
                             return;
                         }
-                        handleRelease(act, fRel, manual);
+                        handleRelease(act, fRel, manual, remoteCode);
                     }
                 });
             }
@@ -233,7 +255,7 @@ final class Updater {
         return r;
     }
 
-    private static void handleRelease(final Activity act, Release rel, boolean manual) {
+    private static void handleRelease(final Activity act, Release rel, boolean manual, long remoteCode) {
         String curName = currentVersionName(act);
         String newVer = extractVersion(rel.tag.length() > 0 ? rel.tag : rel.name);
         if (rel.apkUrl.length() == 0) {
@@ -243,7 +265,19 @@ final class Updater {
             }
             return;
         }
-        if (newVer.length() == 0 || !isNewer(curName, newVer)) {
+        // 以远端包的真实 versionCode 为准：不比本机新就什么都不弹（tag 写错也不会误报）
+        if (remoteCode > 0) {
+            long curCode = currentVersionCode(act);
+            if (remoteCode <= curCode) {
+                if (manual) {
+                    simple(act, "已是最新版本",
+                            "当前版本 " + curName + "（versionCode " + curCode + "），"
+                                    + "网上最新包 versionCode " + remoteCode + "，不比本机新。", false);
+                }
+                return;
+            }
+        } else if (newVer.length() == 0 || !isNewer(curName, newVer)) {
+            // 探测不到（网络差/不支持 Range）才退回按 tag 版本比较
             if (manual) {
                 simple(act, "已是最新版本",
                         "当前版本 " + curName + "，发布页最新为 " + (rel.tag.length() > 0 ? rel.tag : "同版本") + "。",
@@ -252,6 +286,23 @@ final class Updater {
             return;
         }
         prompt(act, rel, curName, newVer);
+    }
+
+    /** 探测远端 APK 的 versionCode：只下几十 KB，失败返回 -1（按未知处理）。 */
+    private static long probeRemoteCode(Release rel) {
+        try {
+            List<String> urls = buildLineList(rel);
+            int tried = 0;
+            for (int i = 0; i < urls.size() && tried < 4; i++) {
+                tried++;
+                long v = ApkProbe.probe(urls.get(i));
+                if (v > 0) {
+                    return v;
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        return -1;
     }
 
     private static void prompt(final Activity act, final Release rel, String curName, String newVer) {
@@ -322,17 +373,25 @@ final class Updater {
         new Thread(new Runnable() {
             @Override
             public void run() {
+                act.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        tv.setText("正在选择下载线路…");
+                    }
+                });
+                final List<String> urls = buildLineList(rel);
                 Exception last = null;
                 boolean ok = false;
-                final int totalLines = DOWNLOAD_SOURCES.length;
+                final int totalLines = urls.size();
                 for (int i = 0; i < totalLines && !ok; i++) {
                     final int line = i + 1;
-                    final String url = DOWNLOAD_SOURCES[i] + rel.apkUrl;
+                    final String url = urls.get(i);
                     act.runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
                             pb.setProgress(0);
-                            tv.setText("连接第 " + line + "/" + totalLines + " 条下载线路…");
+                            tv.setText("第 " + line + "/" + totalLines + " 条线路（" + hostOf(url)
+                                    + "）连接中…");
                         }
                     });
                     try {
@@ -357,8 +416,7 @@ final class Updater {
                             }
                             simple(act, "下载失败",
                                     "已试过 " + totalLines + " 条下载线路，都没成功（最后一条：" + describe(fErr) + "）。\n"
-                                            + "可以稍后再试，或打开发布页用浏览器手动下载。", true);
-                        }
+                                            + "可以稍后再试，或打开发布页用浏览器手动下载。", true);                        }
                     });
                     return;
                 }
@@ -381,17 +439,135 @@ final class Updater {
         }).start();
     }
 
-    /** 从一条线路（镜像前缀 + 原始地址；前缀为空即直连）把 APK 下到 out，失败就抛异常交给上一条换线路。 */
+    /**
+     * 拼出这次要依次尝试的下载地址：jsDelivr（仓库里那份 APK，走 commit SHA 拼地址）排在前面，
+     * GitHub release 资源 + 镜像垫在后面。仓库里没有放 APK 时，jsDelivr 部分自动为空。
+     */
+    private static List<String> buildLineList(Release rel) {
+        List<String> urls = new ArrayList<String>();
+        boolean shaAdded = false;
+        for (int i = 0; i < REPO_APK_PATHS.length; i++) {
+            String path = REPO_APK_PATHS[i];
+            String sha = fetchCommitSha(path);
+            if (sha != null && sha.length() > 0) {
+                String tail = "/gh/" + OWNER + "/" + REPO + "@" + sha + "/" + encodePath(path);
+                for (int h = 0; h < JSDELIVR_HOSTS.length; h++) {
+                    urls.add(JSDELIVR_HOSTS[h] + tail);
+                }
+                shaAdded = true;
+                break;
+            }
+        }
+        if (!shaAdded) {
+            // 查不到 commit（接口限流等）时退一步用 main 分支取，jsDelivr 对分支有缓存，
+            // 可能拿到旧包，但后面的 versionCode 校验会拦住，不会误装
+            String tail = "/gh/" + OWNER + "/" + REPO + "@main/" + encodePath(REPO_APK_PATHS[0]);
+            urls.add(JSDELIVR_HOSTS[0] + tail);
+            urls.add(JSDELIVR_HOSTS[1] + tail);
+        }
+        if (rel.apkUrl.length() > 0) {
+            for (int i = 0; i < DOWNLOAD_SOURCES.length; i++) {
+                urls.add(DOWNLOAD_SOURCES[i] + rel.apkUrl);
+            }
+        }
+        return urls;
+    }
+
+    /** 取「最后一次改动了这个文件」的 commit SHA；仓库里没这个文件返回 null。 */
+    private static String fetchCommitSha(String path) {
+        HttpURLConnection conn = null;
+        InputStream in = null;
+        try {
+            String api = "https://api.github.com/repos/" + OWNER + "/" + REPO + "/commits?path="
+                    + encodePath(path) + "&per_page=1";
+            conn = (HttpURLConnection) new URL(api).openConnection();
+            conn.setConnectTimeout(10000);
+            conn.setReadTimeout(12000);
+            conn.setRequestProperty("User-Agent", UA);
+            conn.setRequestProperty("Accept", "application/vnd.github+json");
+            if (conn.getResponseCode() != 200) {
+                return null;
+            }
+            in = conn.getInputStream();
+            StringBuilder sb = new StringBuilder();
+            byte[] buf = new byte[2048];
+            int n;
+            while ((n = in.read(buf)) > 0) {
+                sb.append(new String(buf, 0, n, "UTF-8"));
+            }
+            JSONArray arr = new JSONArray(sb.toString());
+            if (arr.length() == 0) {
+                return null;
+            }
+            return arr.getJSONObject(0).optString("sha", "");
+        } catch (Exception e) {
+            return null;
+        } finally {
+            try {
+                if (in != null) in.close();
+            } catch (Exception ignored) {
+            }
+            if (conn != null) {
+                conn.disconnect();
+            }
+        }
+    }
+
+    /** 逐段做 URL 编码（保留 /），仓库里带中文名的文件也能拼进地址。 */
+    private static String encodePath(String path) {
+        StringBuilder sb = new StringBuilder();
+        String[] segs = path.split("/");
+        for (int i = 0; i < segs.length; i++) {
+            if (i > 0) {
+                sb.append('/');
+            }
+            try {
+                sb.append(URLEncoder.encode(segs[i], "UTF-8").replace("+", "%20"));
+            } catch (Exception e) {
+                sb.append(segs[i]);
+            }
+        }
+        return sb.toString();
+    }
+
+    /** 进度里给用户看的线路名。 */
+    private static String hostOf(String url) {
+        try {
+            String h = new URL(url).getHost();
+            if (h == null || h.length() == 0) {
+                return "GitHub 直连";
+            }
+            return h.endsWith("jsdelivr.net") ? "jsDelivr 加速" : h;
+        } catch (Exception e) {
+            return "线路";
+        }
+    }
+
+    /** 从一条线路把 APK 下到 out，失败（含"太慢"）就抛异常交给下一条。 */
     private static void downloadOnce(final Activity act, String url, File out, long hint,
                                      final ProgressBar pb, final TextView tv,
                                      final int line, final int totalLines) throws Exception {
         HttpURLConnection conn = null;
         InputStream in = null;
         FileOutputStream fo = null;
+        // jsDelivr 支持 Range（实测 206），多连接拼接比单连接快，先试分段下载
+        if (url.indexOf("jsdelivr.net") >= 0) {
+            try {
+                if (downloadSegmented(act, url, out, pb, tv, line, totalLines)) {
+                    return;
+                }
+            } catch (Exception ignored) {
+                // 分段这条路不通就退回单连接，不改变上层"换线路"的判断
+                try {
+                    out.delete();
+                } catch (Exception ignored2) {
+                }
+            }
+        }
         try {
             conn = (HttpURLConnection) new URL(url).openConnection();
-            conn.setConnectTimeout(15000);
-            conn.setReadTimeout(25000);
+            conn.setConnectTimeout(8000);
+            conn.setReadTimeout(20000);
             conn.setInstanceFollowRedirects(true);
             conn.setRequestProperty("User-Agent", UA);
             int code = conn.getResponseCode();
@@ -407,10 +583,39 @@ final class Updater {
             long got = 0;
             int n;
             int lastPct = -1;
+            long t0 = System.currentTimeMillis();
+            long tMark = t0;
+            long gotAtMark = 0;
             while ((n = in.read(buf)) > 0) {
                 fo.write(buf, 0, n);
                 got += n;
-                if (total > 0) {
+                long now = System.currentTimeMillis();
+                // 连上了却几乎不传数据（部分镜像会一直吊着连接）就直接换下一条，别让用户干等
+                if (got < 131072L && now - t0 > 15000L) {
+                    throw new Exception("这条线路 15 秒只下到 " + Math.round(got / 1024) + " KB");
+                }
+                if (now - tMark >= 800L) {
+                    long speed = (got - gotAtMark) * 1000L / Math.max(1L, now - tMark);
+                    tMark = now;
+                    gotAtMark = got;
+                    final String spd = speedText(speed);
+                    final long fg = got;
+                    final int fp = total > 0 ? (int) Math.min(100L, got * 100L / total) : -1;
+                    lastPct = fp;
+                    act.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (fp >= 0) {
+                                pb.setProgress(fp);
+                                tv.setText("第 " + line + "/" + totalLines + " 条（" + hostOf(url) + "） "
+                                        + fp + "%  " + mb(fg) + " / " + mb(total) + "  " + spd);
+                            } else {
+                                tv.setText("第 " + line + "/" + totalLines + " 条（" + hostOf(url) + "） "
+                                        + mb(fg) + "  " + spd);
+                            }
+                        }
+                    });
+                } else if (total > 0) {
                     int pct = (int) (got * 100L / total);
                     if (pct > 100) {
                         pct = 100;
@@ -423,7 +628,7 @@ final class Updater {
                             @Override
                             public void run() {
                                 pb.setProgress(fp);
-                                tv.setText("第 " + line + "/" + totalLines + " 条线路下载中… "
+                                tv.setText("第 " + line + "/" + totalLines + " 条（" + hostOf(url) + "） "
                                         + fp + "%（" + mb(fg) + " / " + mb(total) + "）");
                             }
                         });
@@ -431,6 +636,9 @@ final class Updater {
                 }
             }
             fo.flush();
+            if (total > 0 && got < total) {
+                throw new Exception("只下到 " + mb(got) + " / " + mb(total) + "，文件不完整");
+            }
         } finally {
             try {
                 if (fo != null) fo.close();
@@ -440,6 +648,170 @@ final class Updater {
                 if (in != null) in.close();
             } catch (Exception ignored) {
             }
+            if (conn != null) {
+                conn.disconnect();
+            }
+        }
+    }
+
+    /**
+     * 分段并发下载（只在服务端支持 Range 时用）：把文件切成 SEG_THREADS 段，各自从不同偏移写同一个文件。
+     * 返回 false 表示服务端不支持 Range，交给调用方走单连接；抛异常表示下载本身失败。
+     */
+    private static boolean downloadSegmented(final Activity act, final String url, File out,
+                                             final ProgressBar pb, final TextView tv,
+                                             final int line, final int totalLines) throws Exception {
+        final long size = probeRangeSize(url);
+        if (size <= 0) {
+            return false;
+        }
+        final int parts = 4;
+        final long chunk = (size + parts - 1) / parts;
+        final RandomAccessFile raf = new RandomAccessFile(out, "rw");
+        try {
+            raf.setLength(size);
+            final AtomicLong done = new AtomicLong(0);
+            final AtomicReference<Exception> err = new AtomicReference<Exception>(null);
+            final Object writeLock = new Object();
+            final boolean[] stopReport = {false};
+
+            Thread reporter = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    long last = 0;
+                    long lastT = System.currentTimeMillis();
+                    while (!stopReport[0]) {
+                        try {
+                            Thread.sleep(600);
+                        } catch (InterruptedException ignored) {
+                        }
+                        if (stopReport[0]) {
+                            break;
+                        }
+                        long got = done.get();
+                        long now = System.currentTimeMillis();
+                        long dt = Math.max(1L, now - lastT);
+                        final String spd = speedText((got - last) * 1000L / dt);
+                        last = got;
+                        lastT = now;
+                        final int pct = (int) Math.min(100L, got * 100L / size);
+                        final long fg = got;
+                        final long ft = size;
+                        act.runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                pb.setProgress(pct);
+                                tv.setText("第 " + line + "/" + totalLines + " 条（" + hostOf(url)
+                                        + " 4线并发） " + pct + "%  " + mb(fg) + " / " + mb(ft) + "  " + spd);
+                            }
+                        });
+                    }
+                }
+            });
+            reporter.setDaemon(true);
+            reporter.start();
+
+            Thread[] threads = new Thread[parts];
+            for (int i = 0; i < parts; i++) {
+                final long from = i * chunk;
+                final long to = Math.min(size - 1, from + chunk - 1);
+                threads[i] = new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (err.get() != null) {
+                            return;
+                        }
+                        HttpURLConnection c = null;
+                        InputStream s = null;
+                        try {
+                            c = (HttpURLConnection) new URL(url).openConnection();
+                            c.setConnectTimeout(10000);
+                            c.setReadTimeout(20000);
+                            c.setRequestProperty("User-Agent", UA);
+                            c.setRequestProperty("Range", "bytes=" + from + "-" + to);
+                            int code = c.getResponseCode();
+                            if (code != 206 && code != 200) {
+                                throw new Exception("HTTP " + code);
+                            }
+                            s = c.getInputStream();
+                            byte[] buf = new byte[8192];
+                            long pos = from;
+                            int n;
+                            while ((n = s.read(buf)) > 0) {
+                                synchronized (writeLock) {
+                                    raf.seek(pos);
+                                    raf.write(buf, 0, n);
+                                }
+                                pos += n;
+                                done.addAndGet(n);
+                                if (pos > to + 1) {
+                                    throw new Exception("分段越界");
+                                }
+                            }
+                            if (pos != to + 1) {
+                                throw new Exception("分段没下完（" + (pos - from) + "/" + (to - from + 1) + "）");
+                            }
+                        } catch (Exception e) {
+                            err.compareAndSet(null, e);
+                        } finally {
+                            try {
+                                if (s != null) s.close();
+                            } catch (Exception ignored) {
+                            }
+                            if (c != null) {
+                                c.disconnect();
+                            }
+                        }
+                    }
+                });
+                threads[i].start();
+            }
+            for (int i = 0; i < parts; i++) {
+                if (threads[i] != null) {
+                    threads[i].join();
+                }
+            }
+            stopReport[0] = true;
+            Exception e = err.get();
+            if (e != null) {
+                throw e;
+            }
+            if (done.get() != size || out.length() != size) {
+                throw new Exception("分段下载长度不符（" + out.length() + " / " + size + "）");
+            }
+            return true;
+        } finally {
+            try {
+                raf.close();
+            } catch (Exception ignored) {
+            }
+        }
+    }
+
+    /** 用 Range 探测文件总长度；服务端不支持 Range 返回 -1。 */
+    private static long probeRangeSize(String url) {
+        HttpURLConnection conn = null;
+        try {
+            conn = (HttpURLConnection) new URL(url).openConnection();
+            conn.setConnectTimeout(10000);
+            conn.setReadTimeout(12000);
+            conn.setRequestProperty("User-Agent", UA);
+            conn.setRequestProperty("Range", "bytes=0-1");
+            if (conn.getResponseCode() != 206) {
+                return -1;
+            }
+            String cr = conn.getHeaderField("Content-Range");
+            if (cr == null) {
+                return -1;
+            }
+            int slash = cr.lastIndexOf('/');
+            if (slash < 0) {
+                return -1;
+            }
+            return Long.parseLong(cr.substring(slash + 1).trim());
+        } catch (Exception e) {
+            return -1;
+        } finally {
             if (conn != null) {
                 conn.disconnect();
             }
@@ -590,6 +962,21 @@ final class Updater {
             return "latest";
         }
         return s.replaceAll("[^0-9A-Za-z.]", "_");
+    }
+
+    /** 进度里显示的实时速度。 */
+    private static String speedText(long bytesPerSec) {
+        if (bytesPerSec <= 0) {
+            return "";
+        }
+        if (bytesPerSec < 1024) {
+            return bytesPerSec + " B/s";
+        }
+        double kb = bytesPerSec / 1024.0;
+        if (kb < 1024) {
+            return String.format(java.util.Locale.US, "%.0f KB/s", kb);
+        }
+        return String.format(java.util.Locale.US, "%.2f MB/s", kb / 1024.0);
     }
 
     private static String mb(long bytes) {

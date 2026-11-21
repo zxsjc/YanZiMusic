@@ -68,6 +68,12 @@ public class MainActivity extends Activity {
     /** 设备硬件本身即为电视/盒子（由 UI Mode / leanback / 无触屏判定），触摸不改变该值。 */
     private boolean tvHardware = false;
     private boolean remoteSeen = false;
+    /** 电视端"按两次返回才退出"：第一次按下的时间点，超过窗口期就要重新按两次。 */
+    private long lastBackPressAt = 0;
+    private static final long EXIT_DOUBLE_PRESS_MS = 2000L;
+    /** 退出提示浮层（电视端大字提示，2 秒后自动淡出）。 */
+    private TextView exitHintView = null;
+    private Runnable exitHintHider = null;
     /** 本次启动是否已经排过一次"检查更新"（同一进程只自动查一次，见 Updater.checkAuto）。 */
     private boolean updateCheckedOnce = false;
     /** 系统输入法由本 App 唤起且仍在使用中：此期间方向键/确认键必须放行给系统。 */
@@ -297,6 +303,66 @@ public class MainActivity extends Activity {
         remoteSeen = true;
         if (!tvMode) {
             setTvMode(true);
+        }
+    }
+
+    private int dp(int v) {
+        return Math.round(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, v,
+                getResources().getDisplayMetrics()));
+    }
+
+    /** 电视端退出提示：屏幕中央大字浮层，2 秒后淡出（遥控器场景下 Toast 太小看不清）。 */
+    private void showExitHint() {
+        if (rootView == null) {
+            return;
+        }
+        if (exitHintView == null) {
+            TextView tv = new TextView(this);
+            tv.setText("再按一次返回键退出");
+            tv.setTextColor(0xFFFFFFFF);
+            tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, 24);
+            tv.setSingleLine(true);
+            tv.setGravity(Gravity.CENTER);
+            tv.setPadding(dp(28), dp(16), dp(28), dp(16));
+            android.graphics.drawable.GradientDrawable bg =
+                    new android.graphics.drawable.GradientDrawable();
+            bg.setColor(0xCC000000);
+            bg.setCornerRadius(dp(14));
+            tv.setBackground(bg);
+            FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            lp.gravity = Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL;
+            lp.bottomMargin = dp(120);
+            rootView.addView(tv, lp);
+            exitHintView = tv;
+            exitHintHider = new Runnable() {
+                @Override
+                public void run() {
+                    if (exitHintView != null) {
+                        exitHintView.animate().alpha(0f).setDuration(250)
+                                .withEndAction(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        if (exitHintView != null) {
+                                            exitHintView.setVisibility(View.INVISIBLE);
+                                        }
+                                    }
+                                }).start();
+                    }
+                }
+            };
+        }
+        exitHintView.animate().cancel();
+        exitHintView.setAlpha(1f);
+        exitHintView.setVisibility(View.VISIBLE);
+        rootView.removeCallbacks(exitHintHider);
+        rootView.postDelayed(exitHintHider, EXIT_DOUBLE_PRESS_MS);
+    }
+
+    private void hideExitHintNow() {
+        if (exitHintView != null) {
+            rootView.removeCallbacks(exitHintHider);
+            exitHintView.setVisibility(View.INVISIBLE);
         }
     }
 
@@ -768,6 +834,23 @@ public class MainActivity extends Activity {
                 if (pickerOpen) {
                     pickerOpen = false;
                     runJs("(function(){ if(typeof closePicker==='function') closePicker(); })();");
+                    return true;
+                }
+                // 电视端：遥控器容易误触返回，改成"第一次弹提示，2 秒内再按一次才退出"。
+                // 注意不能走 web.canGoBack()：页面为纯网页端塞了 history 哨兵（armBackGuard），
+                // APP 内 canGoBack 恒为 true，goBack 会退到空白历史项 → 白屏 + 要按两次。
+                if (tvMode) {
+                    long now = System.currentTimeMillis();
+                    if (now - lastBackPressAt > EXIT_DOUBLE_PRESS_MS) {
+                        lastBackPressAt = now;
+                        diag("->back hint");
+                        showExitHint();
+                        return true;
+                    }
+                    lastBackPressAt = 0;
+                    diag("->back exit");
+                    hideExitHintNow();
+                    finish();
                     return true;
                 }
                 if (web.canGoBack()) {
