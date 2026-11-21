@@ -4,7 +4,7 @@
             "outputFile": "com.yanzi.music.app-mergeDebugResources-2:/values/values.xml",
             "map": [
                 {
-                    "source": "D:\\YanZiMusic\\app\\src\\main\\res\\values\\styles.xml",
+                    "source": "E:\\Documents\\GitHub\\YanZiMusic\\app\\src\\main\\res\\values\\styles.xml",
                     "from": {
                         "startLines": "2",
                         "startColumns": "4",
@@ -23,7 +23,7 @@
                     }
                 },
                 {
-                    "source": "D:\\YanZiMusic\\app\\src\\main\\res\\values\\strings.xml",
+                    "source": "E:\\Documents\\GitHub\\YanZiMusic\\app\\src\\main\\res\\values\\strings.xml",
                     "from": {
                         "startLines": "2",
                         "startColumns": "4",
