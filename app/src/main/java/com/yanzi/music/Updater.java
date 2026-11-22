@@ -88,6 +88,7 @@ final class Updater {
             "YanZiMusic.apk"
     };
     private static final String[] DOWNLOAD_SOURCES = {
+            "https://v6.gh-proxy.org/",
             "https://ghproxy.net/",
             "https://ghfast.top/",
             ""
