@@ -61,6 +61,15 @@
         }
         .topbar > * + * { margin-left:12px; }
         .topbar .title { margin: 0; }
+        /* v1.7.40：顶栏最右边加一句地区欢迎语，靠 auto 外边距推到行末 */
+        .topbar .greet {
+            margin-left: auto;
+            font-size: 13px; font-weight: 600;
+            color: rgba(255,255,255,.95);
+            letter-spacing: 1px; white-space: nowrap;
+            text-shadow: 0 2px 8px rgba(0,0,0,.45);
+            flex: 0 0 auto;
+        }
         /* v1.18：搜索行「三端全部铺满」—— 去掉 900px 居中限宽，width:100% 即整屏宽度，
            手机 / PC / 电视三个控件都一路贴到屏幕左右边。
            v1.16 只让手机铺满、PC/电视还保留 900px 限宽，本次按反馈统一取消。
@@ -383,6 +392,7 @@
         body.tv .topbar { height: 44px; margin-bottom: 6px; flex: 0 0 44px; }
         body.tv .topbar .cover { width: 44px; height: 44px; flex: 0 0 44px; border-width: 2px; }
         body.tv .title { font-size: 24px; }
+        body.tv .greet { font-size: 18px; }
         body.tv .change-wrap { height: 44px; margin-bottom: 6px; flex: 0 0 44px; }
         body.tv .hint { display: none; }
         body.tv #playlistId, body.tv #boardSel, body.tv .change-btn {
@@ -541,6 +551,7 @@
     <div class="topbar">
         <div class="cover"><img src="11.jpg" alt="燕子音乐"></div>
         <div class="title">燕子音乐</div>
+        <div class="greet" id="cityGreet">钟祥市欢迎您</div>
     </div>
     <div class="change-wrap">
         <input id="playlistId" type="text" inputmode="text" placeholder="歌名/歌手/歌单ID或链接"
